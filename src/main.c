@@ -29,10 +29,10 @@ int main(int argc, char* argv[]) {
    // TODO in future add command line options to output other version info
 
    rdk_version_info_t version_info;
-   bzero(&version_info, sizeof(version_info));
+   bzero(&version_info, 10*sizeof(version_info));
    
    if(rdk_version_parse_version(&version_info)) {
-      printf("unknown");
+      printf("unknown %s");
    } else {
       printf(version_info.version_name ? version_info.version_name : "null");
    }
