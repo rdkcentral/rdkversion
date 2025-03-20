@@ -82,13 +82,11 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
       int rc_path = stat(VERSION_TXT_PATH, &statbuf_path);
 
       // The file is a mount point if the st_dev field returned by stat is different from its directory.
-      if(rc_dir != 0 || rc_path != 0 || statbuf_path.st_dev != statbuf_dir.st_dev) {
+      if(rc_dir != 0 || rc_path != 0) {
          if(rc_dir != 0) {
             parse_error_ = "Unable to stat <" VERSION_TXT_DIR ">";
-         } else if(rc_path != 0) {
-            parse_error_ = "Unable to stat <" VERSION_TXT_PATH ">";
          } else {
-            parse_error_ = "version file is mounted";
+            parse_error_ = "Unable to stat <" VERSION_TXT_PATH ">";
          }
          ret_val = 1;
       } else {
