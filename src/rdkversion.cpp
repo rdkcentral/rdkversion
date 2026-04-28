@@ -23,6 +23,7 @@
 #include <string.h>
 #include <string>
 #include <sys/stat.h>
+#include <sys/vfs.h>
 #include "rdkversion.h"
 
 using namespace std;
@@ -37,6 +38,12 @@ using namespace std;
 #define VERSION_TAG_JENKINS_JOB          "JENKINS_JOB="
 #define VERSION_TAG_JENKINS_BUILD_NUMBER "JENKINS_BUILD_NUMBER="
 #define VERSION_TAG_BUILD_TIME           "BUILD_TIME="
+
+
+#ifndef OVERLAYFS_SUPER_MAGIC
+#define OVERLAYFS_SUPER_MAGIC 0x794c7630
+#endif
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,8 +88,20 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
       int rc_dir  = stat(VERSION_TXT_DIR, &statbuf_dir);
       int rc_path = stat(VERSION_TXT_PATH, &statbuf_path);
 
-      // The file is a mount point if the st_dev field returned by stat is different from its directory.
-      if(rc_dir != 0 || rc_path != 0 || statbuf_path.st_dev != statbuf_dir.st_dev) {
+      bool mounted = false;
+
+      if (rc_dir == 0 && rc_path == 0) {
+          struct statfs fs;
+          if (statfs(VERSION_TXT_DIR, &fs) == 0) {
+              if (fs.f_type != OVERLAYFS_SUPER_MAGIC) {
+                  // keep original behaviour for non-overlay filesystems
+                  mounted = (statbuf_path.st_dev != statbuf_dir.st_dev);
+              }
+              // else: overlayfs → ignore st_dev comparison
+          }
+      }
+
+      if (rc_dir != 0 || rc_path != 0 || mounted) {
          if(rc_dir != 0) {
             parse_error_ = "Unable to stat <" VERSION_TXT_DIR ">";
          } else if(rc_path != 0) {
