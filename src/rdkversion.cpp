@@ -82,19 +82,33 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
 
       int rc_dir  = stat(VERSION_TXT_DIR, &statbuf_dir);
       int rc_path = stat(VERSION_TXT_PATH, &statbuf_path);
-      int overlayfs_path = stat(OVERLAYFS_TAG_PATH, &overlay_stat);
+      int rc_overlayfs_path = stat(OVERLAYFS_TAG_PATH, &overlay_stat);
 
-      // The file is a mount point if the st_dev field returned by stat is different from its directory.
-      if(rc_dir != 0 || rc_path != 0 || (overlayfs_path != 0 && statbuf_path.st_dev != statbuf_dir.st_dev)) {
-         if(rc_dir != 0) {
-            parse_error_ = "Unable to stat <" VERSION_TXT_DIR ">";
-         } else if(rc_path != 0) {
-            parse_error_ = "Unable to stat <" VERSION_TXT_PATH ">";
-         } else {
-            parse_error_ = "version file is mounted";
-         }
+      // The mounted file check is only needed when overlayfs is not enabled. If overlayfs is enabled, the check needs to be skipped.
+      bool parse_version_contents = false;
+
+      if(rc_path != 0) {
+         parse_error_ = "Unable to stat <" VERSION_TXT_PATH ">";
          ret_val = 1;
+      } else if(rc_overlayfs_path == 0) {
+         // skip mounted file check when overlayfs is enabled
+         parse_version_contents = true;
       } else {
+         // check for mounted file
+         rc_dir = stat(VERSION_TXT_DIR, &statbuf_dir);
+         if(rc_dir != 0 || statbuf_path.st_dev != statbuf_dir.st_dev) {
+            if(rc_dir != 0) {
+               parse_error_ = "Unable to stat <" VERSION_TXT_DIR ">";
+            } else {
+               parse_error_ = "version file is mounted";
+            }
+            ret_val = 1;
+         } else {
+            parse_version_contents = true;
+         }
+      }
+
+      if(parse_version_contents) {
          string contents((const char *)buffer);
          if(!rdk_version_value_get(contents, VERSION_TAG_IMAGENAME, &image_name_, "\r\n")) {
             parse_error_.append(VERSION_TAG_IMAGENAME);
