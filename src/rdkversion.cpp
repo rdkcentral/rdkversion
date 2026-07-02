@@ -76,11 +76,9 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
       parse_error_ = "Empty " VERSION_TXT_PATH " file";
       ret_val = 1;
    } else {
-      struct stat statbuf_dir;
       struct stat statbuf_path;
       struct stat overlay_stat;
 
-      int rc_dir  = stat(VERSION_TXT_DIR, &statbuf_dir);
       int rc_path = stat(VERSION_TXT_PATH, &statbuf_path);
       int rc_overlayfs_path = stat(OVERLAYFS_TAG_PATH, &overlay_stat);
 
@@ -95,7 +93,8 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
          parse_version_contents = true;
       } else {
          // check for mounted file
-         rc_dir = stat(VERSION_TXT_DIR, &statbuf_dir);
+         struct stat statbuf_dir;
+         int rc_dir = stat(VERSION_TXT_DIR, &statbuf_dir);
          if(rc_dir != 0 || statbuf_path.st_dev != statbuf_dir.st_dev) {
             if(rc_dir != 0) {
                parse_error_ = "Unable to stat <" VERSION_TXT_DIR ">";
