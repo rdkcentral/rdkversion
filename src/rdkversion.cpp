@@ -77,10 +77,9 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
       ret_val = 1;
    } else {
       struct stat statbuf_path;
-      struct stat overlay_stat;
 
       int rc_path = stat(VERSION_TXT_PATH, &statbuf_path);
-      int rc_overlayfs_path = stat(OVERLAYFS_TAG_PATH, &overlay_stat);
+      gboolean overlayfs_enabled = g_file_test(OVERLAYFS_TAG_PATH, G_FILE_TEST_EXISTS);
 
       // The mounted file check is only needed when overlayfs is not enabled. If overlayfs is enabled, the check needs to be skipped.
       bool parse_version_contents = false;
@@ -88,7 +87,7 @@ unsigned char rdk_version_parse_version(rdk_version_info_t *version_info) {
       if(rc_path != 0) {
          parse_error_ = "Unable to stat <" VERSION_TXT_PATH ">";
          ret_val = 1;
-      } else if(rc_overlayfs_path == 0) {
+      } else if(overlayfs_enabled) {
          // skip mounted file check when overlayfs is enabled
          parse_version_contents = true;
       } else {
